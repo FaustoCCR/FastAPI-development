@@ -15,6 +15,6 @@ def connect_db():
 
         cursor = conn.cursor()
         print("Database connection was succesfull !", cursor)
-        return cursor
+        return conn, cursor
     except Exception as error:
         print("Connection failed: ", error, sep="\n")
