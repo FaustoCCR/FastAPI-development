@@ -1,20 +1,27 @@
-import psycopg2
-from psycopg2.extras import RealDictCursor  # * returns sql operations in a dict format
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 from app.db.config import Settings
 
-def connect_db():
-    try:
-        settings = Settings()
-        conn = psycopg2.connect(
-            host=settings.host,
-            database=settings.database,
-            user=settings.username,
-            password=settings.password,
-            cursor_factory=RealDictCursor,
-        )
+settings = Settings()
 
-        cursor = conn.cursor()
-        print("Database connection was succesfull !", cursor)
-        return conn, cursor
-    except Exception as error:
-        print("Connection failed: ", error, sep="\n")
+SQLALCHEMY_DATABASE_URL = "postgresql://{}:{}@{}/{}".format(
+    settings.username, settings.password, settings.host, settings.database
+)
+# * stablish connection
+# we will use this engine in other places
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+"""
+Each instance of the SessionLocal class will be a database session.
+To create a session class, use the function sessionmaker 
+"""
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+"""
+We will use the function declarative_base() that returns a class.
+Later we will inherit from this class to create each of the database models or classes ( the ORM models)
+"""
+
+Base = declarative_base()
