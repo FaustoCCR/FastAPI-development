@@ -6,7 +6,7 @@ from app.dependencies import get_db
 from fastapi import status, HTTPException, Depends, APIRouter
 
 router = APIRouter(
-    prefix="/posts", tags=["posts"], responses={404: {"description": "Not found"}}
+    prefix="/posts", tags=["Posts"], responses={404: {"description": "Not found"}}
 )
 
 
