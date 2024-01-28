@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import user, post
+from app.routers import user, post, auth
 
 app = FastAPI()
 
@@ -13,3 +13,4 @@ def root():
 # * routers
 app.include_router(user.router)
 app.include_router(post.router)
+app.include_router(auth.router)

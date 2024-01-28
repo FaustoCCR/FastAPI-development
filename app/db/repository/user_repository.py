@@ -1,50 +1,44 @@
-from app.db.models.user import User
-from app.db.repository.base import BaseRepository
 from app import schemas
-from app.db import models
 from typing import Type
-from app.schemas.user import User, UserCreate
-from passlib.context import CryptContext
-
-"""
-Create a PassLib "context". This is what will be used to hash and verify password
-It also has the functionality to use different hashing algorithms, including
-deprecated old ones.
-"""
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def get_password_hash(password: str) -> str:
-    # TODO: Check generated warning message to python 3.11 version
-    """Hash a password coming from the user
-
-    Args:
-        password (str): user password
-
-    Returns:
-        str: password hash
-    """
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify if a received password matches the hash stored
-
-    Args:
-        plain_password (str): plain password
-        hashed_password (str): hashed password stored
-
-    Returns:
-        bool: comparison result
-    """
-    return pwd_context.verify(plain_password, hashed_password)
+from app.db import models
+from app.auth import oauth2
+from app.db.repository.base import BaseRepository
+from app.auth.util import get_password_hash, verify_password
+from app.schemas.exceptions import UserNotFoundException, InvalidPasswordException
+from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 
 
 class UserRepository(BaseRepository[models.User, schemas.UserCreate]):
     Entity: Type[models.User] = models.User
 
     # Custom repository methods for user model
-    def create(self, item: UserCreate) -> User:
+    def create(self, item: schemas.UserCreate) -> models.User:
         # hash the password attribute
         item.password = get_password_hash(item.password)
         return super().create(item)
+
+    def authenticate(
+        self, user_credentials: OAuth2PasswordRequestForm
+    ) -> schemas.Token:
+        """authenticate user
+
+        Args:
+            user_credentials (OAuth2PasswordRequestForm): Data access
+
+        Returns:
+            schemas.Token: Token content and its type
+        """
+        user = (
+            self.db.query(models.User)
+            .filter(models.User.email == user_credentials.username)
+            .first()
+        )
+        if not user:
+            raise UserNotFoundException(identifier=user_credentials.username)
+        if not verify_password(user_credentials.password, user.password):
+            raise InvalidPasswordException()
+
+        # create a token and return it
+        access_token = oauth2.create_access_token(data={"user_id": user.id})
+        # return {"access_token": access_token, "token_type": "bearer"}
+        return schemas.Token(access_token=access_token, token_type="bearer")

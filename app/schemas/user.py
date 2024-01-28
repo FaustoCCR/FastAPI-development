@@ -17,3 +17,8 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+
+# * Authentication
+class UserLogin(UserCreate):
+    ...
