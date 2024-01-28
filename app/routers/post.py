@@ -1,12 +1,16 @@
 from app import schemas
-from typing import List
+from typing import List, Annotated
 from app.db import PostRepository
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from fastapi import status, HTTPException, Depends, APIRouter
+from app.auth import oauth2
 
 router = APIRouter(
-    prefix="/posts", tags=["Posts"], responses={404: {"description": "Not found"}}
+    prefix="/posts",
+    tags=["Posts"],
+    dependencies=[Depends(oauth2.get_current_user)],
+    responses={404: {"description": "Not found"}},
 )
 
 
@@ -32,7 +36,10 @@ def get_post(id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     response_model=schemas.Post,
 )
-def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
+def create_post(
+    post: schemas.PostCreate,
+    db: Session = Depends(get_db),
+):
     new_post = PostRepository(db=db).create(post)
     return new_post
 
