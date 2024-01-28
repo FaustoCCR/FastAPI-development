@@ -7,6 +7,7 @@ from app.auth.util import get_password_hash, verify_password
 from app.schemas.exceptions import UserNotFoundException, InvalidPasswordException
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 
+
 class UserRepository(BaseRepository[models.User, schemas.UserCreate]):
     Entity: Type[models.User] = models.User
 
@@ -16,7 +17,17 @@ class UserRepository(BaseRepository[models.User, schemas.UserCreate]):
         item.password = get_password_hash(item.password)
         return super().create(item)
 
-    def authenticate(self, user_credentials: OAuth2PasswordRequestForm):
+    def authenticate(
+        self, user_credentials: OAuth2PasswordRequestForm
+    ) -> schemas.Token:
+        """authenticate user
+
+        Args:
+            user_credentials (OAuth2PasswordRequestForm): Data access
+
+        Returns:
+            schemas.Token: Token content and its type
+        """
         user = (
             self.db.query(models.User)
             .filter(models.User.email == user_credentials.username)
@@ -29,4 +40,5 @@ class UserRepository(BaseRepository[models.User, schemas.UserCreate]):
 
         # create a token and return it
         access_token = oauth2.create_access_token(data={"user_id": user.id})
-        return {"access_token": access_token, "token_type": "bearer"}
+        # return {"access_token": access_token, "token_type": "bearer"}
+        return schemas.Token(access_token=access_token, token_type="bearer")
